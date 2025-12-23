@@ -1,4 +1,5 @@
 using LibraryManagement.API.Data;
+using LibraryManagement.API.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +11,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<LmsDbContext>(options => 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LmsConnectionsString")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LmsConnectionString")));
+
+builder.Services.AddScoped<IBookRepository, SQLBookRepository>();
 
 var app = builder.Build();
 
