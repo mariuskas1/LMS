@@ -13,7 +13,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<LmsDbContext>(options => 
     options.UseSqlServer(builder.Configuration.GetConnectionString("LmsConnectionString")));
 
-builder.Services.AddScoped<IBookRepository, SQLBookRepository>();
+builder.Services.AddScoped<IBookRepository, SqlBookRepository>();
 
 var app = builder.Build();
 

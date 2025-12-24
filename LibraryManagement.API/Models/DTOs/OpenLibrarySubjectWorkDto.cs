@@ -4,7 +4,7 @@ namespace LibraryManagement.API.Models.DTOs;
 
 public class OpenLibrarySubjectWorkDto {
     [JsonPropertyName("key")]
-    public string? Key { get; set; }            // e.g. "/works/OL123W"
+    public string? Key { get; set; }            
 
     [JsonPropertyName("title")]
     public string? Title { get; set; }
