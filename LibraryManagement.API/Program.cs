@@ -1,8 +1,10 @@
+using LibraryManagement.API.Clients;
 using LibraryManagement.API.Data;
+using LibraryManagement.API.Mappings;
 using LibraryManagement.API.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
@@ -14,8 +16,20 @@ builder.Services.AddDbContext<LmsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LmsConnectionString")));
 
 builder.Services.AddScoped<IBookRepository, SqlBookRepository>();
+builder.Services.AddScoped<DatabaseSeeder>();
+builder.Services.AddScoped<OpenLibraryClient>();
+builder.Services.AddAutoMapper( cfg => { },
+    typeof(AutomapperProfiles).Assembly);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
+
+
+
+using (IServiceScope scope = app.Services.CreateScope()) {
+    DatabaseSeeder seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await seeder.SeedDatabaseAsync();
+}
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {

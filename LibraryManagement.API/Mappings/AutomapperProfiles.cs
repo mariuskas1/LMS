@@ -8,5 +8,6 @@ public class AutomapperProfiles : Profile {
     
     public AutomapperProfiles() {
         CreateMap<OpenLibrarySubjectWorkDto, Book>().ReverseMap();
+        CreateMap<OpenLibraryWorkAuthorDto, Author>().ReverseMap();
     }
 }

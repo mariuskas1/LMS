@@ -22,15 +22,35 @@ namespace LibraryManagement.API.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("LibraryManagement.API.Models.Domain.Book", b =>
+            modelBuilder.Entity("LibraryManagement.API.Models.Domain.Author", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<string>("Author")
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.ToTable("Author");
+                });
+
+            modelBuilder.Entity("LibraryManagement.API.Models.Domain.Book", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("IsBorrowed")
                         .HasColumnType("bit");
@@ -52,9 +72,11 @@ namespace LibraryManagement.API.Migrations
 
             modelBuilder.Entity("LibraryManagement.API.Models.Domain.Loan", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<Guid>("BookId")
                         .HasColumnType("uniqueidentifier");
@@ -78,9 +100,11 @@ namespace LibraryManagement.API.Migrations
 
             modelBuilder.Entity("LibraryManagement.API.Models.Domain.User", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -93,6 +117,18 @@ namespace LibraryManagement.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("LibraryManagement.API.Models.Domain.Author", b =>
+                {
+                    b.HasOne("LibraryManagement.API.Models.Domain.Book", null)
+                        .WithMany("Authors")
+                        .HasForeignKey("BookId");
+                });
+
+            modelBuilder.Entity("LibraryManagement.API.Models.Domain.Book", b =>
+                {
+                    b.Navigation("Authors");
                 });
 #pragma warning restore 612, 618
         }

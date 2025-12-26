@@ -20,4 +20,10 @@ public class SqlBookRepository : IBookRepository {
        await _dbContext.SaveChangesAsync();
        return book;
     }
+
+    public async Task DeleteAllBooksAsync() {
+        DbSet<Book> books = _dbContext.Books;
+        _dbContext.Books.RemoveRange(books);
+        await _dbContext.SaveChangesAsync();
+    }
 }
