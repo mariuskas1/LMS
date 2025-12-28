@@ -21,7 +21,16 @@ public class SqlBookRepository : IBookRepository {
        return book;
     }
 
-    public async Task DeleteAllBooksAsync() {
+    public async Task AddRangeAsync(IEnumerable<Book> books) {
+        await _dbContext.Books.AddRangeAsync(books);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public Task<int> CountAsync() 
+        => _dbContext.Books.CountAsync();
+    
+
+    public async Task DeleteAllAsync() {
         DbSet<Book> books = _dbContext.Books;
         _dbContext.Books.RemoveRange(books);
         await _dbContext.SaveChangesAsync();
