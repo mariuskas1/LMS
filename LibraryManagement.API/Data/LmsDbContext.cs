@@ -14,4 +14,6 @@ public class LmsDbContext : DbContext {
     public DbSet<Loan> Loans { get; set; }
     
     public DbSet<User> Users { get; set; }
+    
+    public DbSet<Author> Authors { get; set; }
 }
