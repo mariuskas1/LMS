@@ -60,6 +60,7 @@ public class LoanService {
 
         if (targetedLoan.TimesExtended >= 3) {
             _logger.LogInformation("The loan for the book {loan.BookId} cannot be extended. It has already been extended three times.", targetedLoan);
+            return;
         }
         
         if (await CanUserLoan(userId)) {
@@ -103,7 +104,4 @@ public class LoanService {
         return newLoan;
     }
     
-    
-
-
 }
