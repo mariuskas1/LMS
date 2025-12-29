@@ -15,7 +15,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<LmsDbContext>(options => 
     options.UseSqlServer(builder.Configuration.GetConnectionString("LmsConnectionString")));
 
-builder.Services.AddScoped<IBookRepository, SqlBookRepository>();
+builder.Services.AddScoped<IBookRepository, BookRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ILoanRepository, LoanRepository>();
+builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
 builder.Services.AddScoped<DatabaseSeeder>();
 builder.Services.AddScoped<OpenLibraryClient>();
 builder.Services.AddAutoMapper( cfg => { },
