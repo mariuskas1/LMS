@@ -15,6 +15,7 @@ public class User {
     public required string FirstName { get; set; }
     
     public decimal OutstandingFees { get; set; }
-    
-    public List<Loan>? Loans { get; set; }
+
+    public List<Loan> Loans { get; set; } = [];
+
 }
