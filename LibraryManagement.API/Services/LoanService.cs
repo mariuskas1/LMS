@@ -36,7 +36,7 @@ public class LoanService {
         }
         
         
-        if (await CanUserLoan(userId)) {
+        if (await CanUserLoan(userId) && !book.IsBorrowed) {
             Loan newLoan = GetNewLoan(user, book);
             
             // Update loans
@@ -72,11 +72,21 @@ public class LoanService {
         }
     }
 
+    public async Task ReturnBook(int bookId) {
+        Book? book = await _bookRepository.GetByIdAsync(bookId);
+        List<Loan> allLoans = await _loanRepository.GetAllAsync();
+        Loan? targetedLoan = allLoans.FirstOrDefault(loan => loan.BookId == bookId);
+        if (targetedLoan == null || book == null) return;
+        
+        targetedLoan.ReturnedAt = DateTime.Now;
+        book.IsBorrowed = false;
+    }
+
     private async Task<bool> CanUserLoan(int userId) {
         User? user = await _userRepository.GetByIdAsync(userId);
 
         if (user == null) {
-            _logger.LogWarning("User {userId} not found", userId);
+            _logger.LogWarning("User with id {userId} not found", userId);
             return false;
         }
 
