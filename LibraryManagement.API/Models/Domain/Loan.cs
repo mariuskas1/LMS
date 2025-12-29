@@ -15,6 +15,8 @@ public class Loan {
     public DateTime DueAt { get; set; }  = DateTime.Now + TimeSpan.FromDays(28);
     public DateTime? ReturnedAt { get; set; }
     
+    public int TimesExtended { get; set; } 
+    
     public bool IsOverdue(DateTime now)
         => ReturnedAt == null && DueAt < now;
     

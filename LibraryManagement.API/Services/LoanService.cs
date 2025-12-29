@@ -37,14 +37,38 @@ public class LoanService {
         
         
         if (await CanUserLoan(userId)) {
-            Loan newLoan = await CreateNewLoan(user, book);
-            _logger.LogInformation("Loan {newLoan.Id} has been created.", newLoan);
-        }
+            Loan newLoan = GetNewLoan(user, book);
+            
+            // Update loans
+            user.Loans.Add(newLoan);
+            await _userRepository.UpdateAsync(user.Id, user);
         
+            // Update books
+            book.IsBorrowed = true;
+            await _bookRepository.UpdateAsync(book.Id, book);
+        
+            // Create new loan
+            await _loanRepository.CreateAsync(newLoan);
+            _logger.LogInformation("New loan {newLoan.Id} has been created.", newLoan);
+        }
     }
     
-    public void ExtendBookLoan(int bookId, int userId) {
+    public async Task ExtendBookLoan(int bookId, int userId) {
+        List<Loan> allLoans = await _loanRepository.GetAllAsync();
+        Loan? targetedLoan = allLoans.FirstOrDefault(loan => loan.BookId == bookId && loan.UserId == userId);
+        if (targetedLoan == null) return;
+
+        if (targetedLoan.TimesExtended >= 3) {
+            _logger.LogInformation("The loan for the book {loan.BookId} cannot be extended. It has already been extended three times.", targetedLoan);
+        }
         
+        if (await CanUserLoan(userId)) {
+            targetedLoan.DueAt += TimeSpan.FromDays(28);
+            targetedLoan.TimesExtended++;
+            
+            await _loanRepository.UpdateAsync(targetedLoan.Id, targetedLoan);
+            _logger.LogInformation("Loan {targetedLoan.Id} has been extended.", targetedLoan);
+        }
     }
 
     private async Task<bool> CanUserLoan(int userId) {
@@ -68,25 +92,18 @@ public class LoanService {
         return true;
     }
 
-    private async Task<Loan> CreateNewLoan(User user, Book book) {
+    private static Loan GetNewLoan(User user, Book book) {
         Loan newLoan = new() {
             Book = book,
             BookId = book.Id,
             User = user,
             UserId = user.Id,
-
         };
-            
-        user.Loans.Add(newLoan);
-        await _userRepository.UpdateAsync(user.Id, user);
-        
-        book.IsBorrowed = true;
-        await _bookRepository.UpdateAsync(book.Id, book);
-        
-        await _loanRepository.CreateAsync(newLoan);
 
         return newLoan;
     }
+    
+    
 
 
 }
