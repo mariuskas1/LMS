@@ -1,5 +1,5 @@
 namespace LibraryManagement.API.Services;
 
-public class MailingService {
+public class FeeCalculationService {
     
 }

@@ -1,5 +1,5 @@
 namespace LibraryManagement.API.Services;
 
-public class FeeService {
+public class AbstractNotificationService {
     
 }

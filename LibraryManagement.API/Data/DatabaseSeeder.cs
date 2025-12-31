@@ -16,7 +16,7 @@ public class DatabaseSeeder {
     public async Task SeedDatabaseAsync() {
         if (await _bookRepository.CountAsync() > 100) return;
         
-        List<Book> books = await _openLibraryClient.GetBooksBySubjectAsync("science fiction");
+        List<Book> books = await _openLibraryClient.GetBooksBySubjectAsync("science fiction", 100);
 
         await _bookRepository.AddRangeAsync(books);
     }
