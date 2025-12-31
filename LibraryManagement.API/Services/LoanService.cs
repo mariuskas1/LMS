@@ -11,12 +11,7 @@ public class LoanService {
     private readonly ILogger<LoanService> _logger;
 
     /// <summary> Creates a new instance. </summary>
-    public LoanService (
-        ILoanRepository loanRepository, 
-        IUserRepository userRepository, 
-        IBookRepository bookRepository,
-        ILogger<LoanService> logger
-    ) {
+    public LoanService (ILoanRepository loanRepository, IUserRepository userRepository, IBookRepository bookRepository, ILogger<LoanService> logger) {
         _loanRepository = loanRepository;
         _userRepository = userRepository;
         _bookRepository = bookRepository;
@@ -48,7 +43,7 @@ public class LoanService {
             user.Loans.Add(newLoan);
             await _userRepository.UpdateAsync(user.Id, user);
         
-            // Update books
+            // Update book
             book.IsBorrowed = true;
             await _bookRepository.UpdateAsync(book.Id, book);
         
