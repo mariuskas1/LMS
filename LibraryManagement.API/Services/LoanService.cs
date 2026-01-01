@@ -99,7 +99,7 @@ public class LoanService {
             return false;
         }
 
-        if (user.OutstandingFees != 0) {
+        if (user.OutstandingFeesTotal != 0) {
             _logger.LogInformation("User {userId} has outstanding fees ", userId);
             return false;
         }

@@ -1,6 +1,7 @@
 namespace LibraryManagement.API.Models.Domain;
 
 public class Loan {
+    
     public int Id { get; set; }
 
     public int BookId { get; set; }
@@ -16,6 +17,8 @@ public class Loan {
     public DateTime? ReturnedAt { get; set; }
     
     public int TimesExtended { get; set; } 
+    
+    public int TimesReminded { get; set; }
     
     public bool IsOverdue(DateTime now)
         => ReturnedAt == null && DueAt < now;

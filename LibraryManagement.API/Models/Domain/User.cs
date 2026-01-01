@@ -14,7 +14,13 @@ public class User {
     [MaxLength(100)]
     public required string FirstName { get; set; }
     
-    public decimal OutstandingFees { get; set; }
+    public DateTime AccessionDate { get; set; } = DateTime.Now;
+    
+    public DateTime AnnualFeeDue => AccessionDate.AddYears(1);
+
+    public List<Fee> OutstandingFees { get; set; } = [];
+    
+    public decimal OutstandingFeesTotal => OutstandingFees?.Sum(fee => fee.Amount) ?? 0;
 
     public List<Loan> Loans { get; set; } = [];
 

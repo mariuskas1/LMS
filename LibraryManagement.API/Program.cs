@@ -2,6 +2,7 @@ using LibraryManagement.API.Clients;
 using LibraryManagement.API.Data;
 using LibraryManagement.API.Mappings;
 using LibraryManagement.API.Repositories;
+using LibraryManagement.API.Services;
 using Microsoft.EntityFrameworkCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,8 @@ builder.Services.AddScoped<DatabaseSeeder>();
 builder.Services.AddScoped<OpenLibraryClient>();
 builder.Services.AddAutoMapper( cfg => { },
     typeof(AutomapperProfiles).Assembly);
+
+builder.Services.AddHostedService<FeeCalculationService>();
 
 WebApplication app = builder.Build();
 
