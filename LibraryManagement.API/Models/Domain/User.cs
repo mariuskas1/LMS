@@ -15,9 +15,9 @@ public class User {
     public required string FirstName { get; set; }
     
     public DateTime AccessionDate { get; set; } = DateTime.Now;
-    public List<Fee> OutstandingFees { get; set; } = [];
+    public List<Fee> Fees { get; set; } = [];
     
-    public decimal OutstandingFeesTotal => OutstandingFees?.Sum(fee => fee.Amount) ?? 0;
+    public decimal FeesTotal => Fees?.Sum(fee => fee.Amount) ?? 0;
 
     public List<Loan> Loans { get; set; } = [];
 

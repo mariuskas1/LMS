@@ -15,8 +15,8 @@ public class UserRepository : IUserRepository {
         return await _dbContext.Users.ToListAsync();
     }
 
-    public async Task<User?> GetByIdAsync(int id) {
-        return await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<User?> GetByIdAsync(int userId) {
+        return await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
     }
 
     public async Task<User> CreateAsync(User user) {
@@ -25,22 +25,26 @@ public class UserRepository : IUserRepository {
         return user;
     }
 
-    public async Task<User?> UpdateAsync(int id, User user) {
-        User? existingUser = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<User?> UpdateAsync(int userId, User user) {
+        User? existingUser = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
         if (existingUser == null) return null;
 
         existingUser.Loans = user.Loans;
         existingUser.Email = user.Email;
         existingUser.FirstName = user.FirstName;
         existingUser.Name  = user.Name;
-        existingUser.OutstandingFees = user.OutstandingFees;
+        existingUser.Fees = user.Fees;
         
         await _dbContext.SaveChangesAsync();
         return existingUser;
     }
+    public async Task UpdateRangeAsync(List<User> users) {
+        _dbContext.Users.UpdateRange(users);
+        await _dbContext.SaveChangesAsync();
+    }
 
-    public async Task<User?> DeleteAsync(int id) {
-        User? existingUser = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<User?> DeleteAsync(int userId) {
+        User? existingUser = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
         if (existingUser == null) return null;
 
         _dbContext.Users.Remove(existingUser);
