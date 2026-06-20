@@ -123,6 +123,11 @@ public class FeeCalculationService : BackgroundService {
     }
 
 
+    /// <summary>
+    /// Adds a fee to the given user and loan object and updates the loan repository.
+    /// Pays attention that the maximum amount per loan of 15€ is kept so the fee amount might be reduced.
+    /// If the fee amount of the given loan is already at 15€, no fee is added to the user or loan.
+    /// </summary>
     private async Task AddFee(Fee fee, User user, Loan loan) {
         if (loan.FeeAmount + fee.Amount >= 15) {
             decimal difference = 15 - (loan.FeeAmount + fee.Amount);
