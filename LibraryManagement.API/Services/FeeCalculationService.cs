@@ -40,7 +40,7 @@ public class FeeCalculationService : BackgroundService {
         foreach (User user in users) {
             if (!AnnualFeeDue(user)) continue;
 
-            Fee newAnnualFee = new() { Amount = 30, Reason = $"Annual fee for year {_currentYear}", Type = FeeType.Annual };
+            Fee newAnnualFee = Fee.CreateAnnualFee(_currentYear);
             user.Fees.Add(newAnnualFee);
             _logger.LogInformation("Fees have been updated with annual fee for the user {user.Id}.", user.Id);
             // TODO: Call FeeNotificationService
@@ -138,7 +138,7 @@ public class FeeCalculationService : BackgroundService {
             }
             
             fee.Amount = difference;
-            fee.Reason += $" The fee amount was cut to {difference}€ so the fee maximum of 15€ per medium is kept.";
+            fee.Description += $" The fee amount was cut to {difference}€ so the fee maximum of 15€ per medium is kept.";
             _logger.LogInformation("The maximum fee amount has been reached.");
         }
         
