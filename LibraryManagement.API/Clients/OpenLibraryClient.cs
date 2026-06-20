@@ -28,9 +28,7 @@ public class OpenLibraryClient {
 
         OpenLibrarySubjectResponseDto? response = JsonSerializer.Deserialize<OpenLibrarySubjectResponseDto>(json);
 
-        if (response?.Works == null) {
-            return [];
-        }
+        if (response?.Works == null) return [];
         
         return _mapper.Map<List<Book>>(response.Works);
     }

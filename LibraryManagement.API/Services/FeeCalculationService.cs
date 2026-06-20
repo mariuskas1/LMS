@@ -5,6 +5,7 @@ namespace LibraryManagement.API.Services;
 
 public class FeeCalculationService : BackgroundService {
     private TimeSpan ExecutionInterval { get; } = TimeSpan.FromDays(7);
+    private readonly int _currentYear = DateTime.Now.Year;
     
     private readonly ILogger<FeeCalculationService> _logger;
     private readonly IUserRepository _userRepository;
@@ -30,15 +31,14 @@ public class FeeCalculationService : BackgroundService {
         CheckAnnualFees(allUsers);
         CheckRemindedOutstandingFees(allUsers);
         CheckOverdueLoans(allUsers);
-        
     }
 
     /// <summary> Checks if a user's annual fee is overdue and if so, adds a new annual fee to the user's account. </summary>
     private void CheckAnnualFees(List<User> users) {
         foreach (User user in users) {
-            if (!(user.AnnualFeeDue > DateTime.Now)) continue;
+            if (!AnnualFeeDue(user)) continue;
 
-            Fee newAnnualFee = new() { Amount = 30, Reason = "Annual fee" };
+            Fee newAnnualFee = new() { Amount = 30, Reason = $"Annual fee for year {_currentYear}", Type = FeeType.Annual };
             user.OutstandingFees.Add(newAnnualFee);
             _logger.LogInformation("Fees have been updated with annual fee for the user {user.Id}.", user.Id);
         }
@@ -61,7 +61,7 @@ public class FeeCalculationService : BackgroundService {
             if (overdueLoans.Count == 0) continue;
 
             foreach (Loan loan in overdueLoans) {
-                // Calculate general overdue fine:
+                // Calculate general overdue fee:
                 int daysOverdue = (DateTime.Now.Date - loan.DueAt.Date).Days;
                 if (daysOverdue <= 0) continue;
                 
@@ -84,8 +84,27 @@ public class FeeCalculationService : BackgroundService {
                     user.OutstandingFees.Add(newReminderFee);
                     _logger.LogInformation("Fees have been updated with a second reminder fee for the user {user.Id}.", user.Id);
                 }
-                
             }
         }
     }
+
+    /// <summary>
+    /// Checks if an annual fee for the user is due.
+    /// This is true if one year has elapsed since the last annual fee or since the accession date of the user.
+    /// </summary>
+    private bool AnnualFeeDue(User user) {
+        Fee? lastAnnualFee = user.OutstandingFees
+                                    .Where(fee => fee.Type == FeeType.Annual)
+                                    .MaxBy(fee => fee.CreatedAt);
+        
+        DateTime referenceDate = lastAnnualFee?.CreatedAt ?? user.AccessionDate;
+
+        bool hasOneYearElapsedSinceReferenceDate = DateTime.Now >= referenceDate.AddYears(1);
+
+        return hasOneYearElapsedSinceReferenceDate && !AnnualFeeAlreadyAdded(user);
+    }
+
+    /// <summary> Checks if an annual fee for the user has already been added for the current year. </summary>
+    private bool AnnualFeeAlreadyAdded(User user) 
+        => user.OutstandingFees.Any(fee => fee.Type == FeeType.Annual && fee.CreatedAt.Year == _currentYear);
 }

@@ -1,15 +1,10 @@
 namespace LibraryManagement.API.Models.Domain;
 
 public class Loan {
-    
     public int Id { get; set; }
-
     public int BookId { get; set; }
-    
     public required Book Book  { get; set; }
-    
     public int UserId { get; set; }
-    
     public required User User { get; set; }
 
     public DateTime LoanedAt { get; set; } = DateTime.Now;

@@ -6,13 +6,13 @@ public interface IBookRepository {
     
     Task<List<Book>> GetAllAsync();
 
-    Task<Book?> GetByIdAsync(int id);
+    Task<Book?> GetByIdAsync(int bookId);
 
     Task<Book> CreateAsync(Book book);
 
-    Task<Book?> UpdateAsync(int id, Book book);
+    Task<Book?> UpdateAsync(int bookId, Book book);
 
-    Task<Book?> DeleteAsync(int id);
+    Task<Book?> DeleteAsync(int bookId);
     
     Task AddRangeAsync(IEnumerable<Book> books);
     

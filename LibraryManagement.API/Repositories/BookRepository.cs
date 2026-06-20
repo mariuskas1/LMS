@@ -15,8 +15,8 @@ public class BookRepository : IBookRepository {
         return await _dbContext.Books.ToListAsync();
     }
 
-    public async Task<Book?> GetByIdAsync(int id) {
-        return await _dbContext.Books.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<Book?> GetByIdAsync(int bookId) {
+        return await _dbContext.Books.FirstOrDefaultAsync(x => x.Id == bookId);
     }
 
     public async Task<Book> CreateAsync(Book book) {
@@ -25,8 +25,8 @@ public class BookRepository : IBookRepository {
        return book;
     }
 
-    public async Task<Book?> UpdateAsync(int id, Book book) {
-        Book? existingBook = await _dbContext.Books.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<Book?> UpdateAsync(int bookId, Book book) {
+        Book? existingBook = await _dbContext.Books.FirstOrDefaultAsync(x => x.Id == bookId);
         if (existingBook == null) return null;
 
         existingBook.Authors = book.Authors;
@@ -40,8 +40,8 @@ public class BookRepository : IBookRepository {
         return existingBook;
     }
 
-    public async Task<Book?> DeleteAsync(int id) {
-        Book? existingBook = await _dbContext.Books.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<Book?> DeleteAsync(int bookId) {
+        Book? existingBook = await _dbContext.Books.FirstOrDefaultAsync(x => x.Id == bookId);
         if (existingBook == null) return null;
         
         _dbContext.Books.Remove(existingBook);

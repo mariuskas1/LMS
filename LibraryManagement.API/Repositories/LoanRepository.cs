@@ -15,8 +15,13 @@ public class LoanRepository : ILoanRepository {
         return await _dbContext.Loans.ToListAsync();
     }
 
-    public async Task<Loan?> GetByIdAsync(int id) {
-        return await _dbContext.Loans.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<List<Loan>> GetAllActiveLoansAsync() {
+        List<Loan> activeLoans = await _dbContext.Loans.Where(loan => loan.ReturnedAt != null).ToListAsync();
+        return activeLoans;
+    }
+
+    public async Task<Loan?> GetByIdAsync(int loanId) {
+        return await _dbContext.Loans.FirstOrDefaultAsync(x => x.Id == loanId);
     }
 
     public async Task<Loan> CreateAsync(Loan loan) {
@@ -26,8 +31,8 @@ public class LoanRepository : ILoanRepository {
         return loan;
     }
 
-    public async Task<Loan?> UpdateAsync(int id, Loan loan) {
-        Loan? existingLoan = await _dbContext.Loans.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<Loan?> UpdateAsync(int loanId, Loan loan) {
+        Loan? existingLoan = await _dbContext.Loans.FirstOrDefaultAsync(x => x.Id == loanId);
         if (existingLoan == null) return null;
 
         existingLoan.DueAt = loan.DueAt;
@@ -36,8 +41,8 @@ public class LoanRepository : ILoanRepository {
         return existingLoan;
     }
 
-    public async Task<Loan?> DeleteAsync(int id) {
-        Loan? existingLoan = await _dbContext.Loans.FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<Loan?> DeleteAsync(int loanId) {
+        Loan? existingLoan = await _dbContext.Loans.FirstOrDefaultAsync(x => x.Id == loanId);
         if (existingLoan == null) return null;
 
         _dbContext.Loans.Remove(existingLoan);

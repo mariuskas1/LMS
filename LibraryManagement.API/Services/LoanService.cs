@@ -35,7 +35,6 @@ public class LoanService {
             return;
         }
         
-        
         if (await CanUserLoan(userId) && !book.IsBorrowed) {
             Loan newLoan = GetNewLoan(user, book);
             
@@ -79,13 +78,28 @@ public class LoanService {
     /// <summary> Calls the necessary functions to return a book and update the database accordingly. </summary>
     /// <param name="bookId">The id of the book that is returned. </param>
     public async Task ReturnBook(int bookId) {
+        // Get necessary data
         Book? book = await _bookRepository.GetByIdAsync(bookId);
-        List<Loan> allLoans = await _loanRepository.GetAllAsync();
-        Loan? targetedLoan = allLoans.FirstOrDefault(loan => loan.BookId == bookId);
-        if (targetedLoan == null || book == null) return;
+        List<Loan> activeLoans = await _loanRepository.GetAllActiveLoansAsync();
+        Loan? targetedLoan = activeLoans.FirstOrDefault(loan => loan.BookId == bookId);
+
+        if (book == null) {
+            _logger.LogWarning("The book to be returned could not be found in the database: {bookId}", bookId);
+            return;
+        }
         
+        if (targetedLoan == null) {
+            _logger.LogWarning("An active loan could not be found in the database: {bookId}", bookId);
+            return;
+        }
+        
+        // Modify data
         targetedLoan.ReturnedAt = DateTime.Now;
         book.IsBorrowed = false;
+        
+        // Update database
+        await _bookRepository.UpdateAsync(bookId, book);
+        await _loanRepository.UpdateAsync(targetedLoan.Id, targetedLoan);
     }
 
     /// <summary> Checks if a user is able to loan a book or extend an existing loan. The requirements for both are the same: A user can't have any fees or overdue loans.
