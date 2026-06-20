@@ -68,24 +68,20 @@ public class FeeCalculationService : BackgroundService {
             foreach (Loan loan in overdueLoans) {
                 // Calculate general overdue fee:
                 int daysOverdue = (DateTime.Now - loan.DueAt).Days;
-                if (daysOverdue <= 10) {
-                    Fee overdueFee = Fee.CreateOverdueFee(0.5m, loan.Id);
-                    await AddFee(overdueFee, user, loan);
-                } else {
-                    Fee overdueFee = Fee.CreateOverdueFee(1m, loan.Id);
-                    await AddFee(overdueFee, user, loan);
-                }
+                decimal amount = daysOverdue <= 10 ? 0.5m : 1.0m;
+                Fee overdueFee = Fee.CreateOverdueFee(amount, loan.Id);
+                await TryAddFee(overdueFee, user, loan);
                 
                 // Calculate reminder fee:
                 if (loan.TimesReminded == 0) continue;
 
                 if (loan.TimesReminded == 1 && !HasFirstReminderFee(loan)) {
                     Fee newReminderFee = Fee.CreateFirstReminderFee(loan.Id);
-                    await AddFee(newReminderFee, user, loan);
+                    await TryAddFee(newReminderFee, user, loan);
                     _logger.LogInformation("Fees have been updated with a first reminder fee for the user {user.Id}.", user.Id);
                 } else if (loan.TimesReminded == 2 && !HasSecondReminderFee(loan)) {
                     Fee newReminderFee = Fee.CreateSecondReminderFee(loan.Id);
-                    await AddFee(newReminderFee, user, loan);
+                    await TryAddFee(newReminderFee, user, loan);
                     _logger.LogInformation("Fees have been updated with a second reminder fee for the user {user.Id}.", user.Id);
                 }
             }
@@ -128,7 +124,7 @@ public class FeeCalculationService : BackgroundService {
     /// Pays attention that the maximum amount per loan of 15€ is kept so the fee amount might be reduced.
     /// If the fee amount of the given loan is already at 15€, no fee is added to the user or loan.
     /// </summary>
-    private async Task AddFee(Fee fee, User user, Loan loan) {
+    private async Task TryAddFee(Fee fee, User user, Loan loan) {
         if (loan.FeeAmount + fee.Amount >= 15) {
             decimal difference = 15 - (loan.FeeAmount + fee.Amount);
 
