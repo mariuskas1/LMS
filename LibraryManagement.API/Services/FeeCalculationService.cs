@@ -15,7 +15,6 @@ public class FeeCalculationService : BackgroundService {
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        
         while (!stoppingToken.IsCancellationRequested) {
             await RunFeeCalculationAsync();
             
@@ -31,12 +30,9 @@ public class FeeCalculationService : BackgroundService {
         await _userRepository.UpdateRangeAsync(allUsers);
     }
 
-    /// <summary> Checks if a user has overdue loans and if so, adds a fee to the user's account according to the following model:
-    /// General overdue fee:
-    ///     Day 1-10: 0.50€ / day
-    ///     From day 11: 1€ / day
-    ///
-    /// Maximum fee per medium: 15€
+    /// <summary>
+    /// Checks if a user has overdue loans and if so, adds a fee to the user's account according to the following model:
+    /// Day 1-10: 0.50€ / day, from day 11: 1€ / day. Maximum fee per medium: 15€
     /// </summary>
     private void CheckOverdueLoans(List<User> users) {
         foreach (User user in users) {
@@ -46,7 +42,6 @@ public class FeeCalculationService : BackgroundService {
             if (overdueLoans.Count == 0) continue;
 
             foreach (Loan loan in overdueLoans) {
-                // Calculate general overdue fee:
                 int daysOverdue = (DateTime.Now - loan.DueAt).Days;
                 decimal amount = daysOverdue <= 10 ? 0.5m : 1.0m;
                 Fee overdueFee = Fee.CreateOverdueFee(amount, loan.Id);

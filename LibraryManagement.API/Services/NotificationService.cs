@@ -34,7 +34,7 @@ public class NotificationService : BackgroundService{
     private void CheckAnnualFees(List<User> users) {
         foreach (User user in users) {
             if (!AnnualFeeDue(user)) continue;
-
+            
             SendAnnualFeeNotification(user);
             _feeManager.AddAnnualFee(user);
         }
@@ -49,9 +49,9 @@ public class NotificationService : BackgroundService{
 
             foreach (Loan loan in overdueLoans) {
                 bool isLoanOverdueFiveDays = (DateTime.Now - loan.DueAt)>= TimeSpan.FromDays(5);
-                bool isLoandOverdueTenDays = (DateTime.Now - loan.DueAt) >= TimeSpan.FromDays(10);
+                bool isLoanOverDueTenDays = (DateTime.Now - loan.DueAt) >= TimeSpan.FromDays(10);
 
-                if (isLoandOverdueTenDays && !HasSecondReminderFee(loan)) {
+                if (isLoanOverDueTenDays && !HasSecondReminderFee(loan)) {
                     SendSecondReminderNotification(user);
                     loan.TimesReminded++;
                     _feeManager.AddSecondReminderFee(user, loan);

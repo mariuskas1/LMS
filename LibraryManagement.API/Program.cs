@@ -26,6 +26,7 @@ builder.Services.AddAutoMapper( cfg => { },
     typeof(AutomapperProfiles).Assembly);
 
 builder.Services.AddHostedService<FeeCalculationService>();
+builder.Services.AddHostedService<NotificationService>();
 
 WebApplication app = builder.Build();
 
