@@ -5,7 +5,6 @@ namespace LibraryManagement.API.Services;
 
 public class NotificationService : BackgroundService{
     private TimeSpan ExecutionInterval { get; } = TimeSpan.FromDays(1);
-    private readonly int _currentYear = DateTime.Now.Year;
 
     private readonly IUserRepository _userRepository;
     private readonly FeeManager _feeManager;
@@ -17,12 +16,12 @@ public class NotificationService : BackgroundService{
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         while (!stoppingToken.IsCancellationRequested) {
-            await RunNotificationCheck();
+            await RunNotificationCheckAsync();
             await Task.Delay(ExecutionInterval, stoppingToken);
         }
     }
     
-    private async Task RunNotificationCheck() {
+    internal async Task RunNotificationCheckAsync() {
         List<User> allUsers = await _userRepository.GetAllAsync();
         
         CheckAnnualFees(allUsers);
@@ -99,8 +98,8 @@ public class NotificationService : BackgroundService{
     }
     
     /// <summary> Checks if an annual fee for the user has already been added for the current year. </summary>
-    private bool AnnualFeeAlreadyAdded(User user) 
-        => user.Fees.Any(fee => fee.Type == FeeType.Annual && fee.CreatedAt.Year == _currentYear);
+    private static bool AnnualFeeAlreadyAdded(User user) 
+        => user.Fees.Any(fee => fee.Type == FeeType.Annual && fee.CreatedAt.Year == DateTime.Now.Year);
     
     /// <summary> Checks if a first reminder fee has already been added to a loan. </summary>
     private static bool HasFirstReminderFee(Loan loan) {
