@@ -11,7 +11,7 @@ public class Book {
     [MaxLength(100)]
     public string? Subtitle { get; set; }
     
-    public required List<Author> Authors { get; set; }
+    public List<Author>? Authors { get; set; }
     
     public int? PublishYear { get; set; }
 
