@@ -43,35 +43,45 @@ public class FeeCalculationServiceTests {
     [Test]
     public async Task Given_UserHasNoLoans_When_RunFeeCalculationAsyncIsCalled_Then_NoFeeIsAdded() {
         _userWithOverdueLoan.Loans.Clear();
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Should().BeEmpty();
     }
     
     [Test]
     public async Task Given_LoanIsNotOverdue_When_RunFeeCalculationAsyncIsCalled_Then_NoFeeIsAdded() {
         _overdueLoan.DueAt = DateTime.Now.AddDays(1);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Should().BeEmpty();
     }
     
     [Test]
     public async Task Given_UserHasOneDayOverdueLoan_When_RunFeeCalculationAsyncIsCalled_Then_FeeIsAdded() {
         _overdueLoan.DueAt = DateTime.Now.AddDays(-1);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees[0].Amount.Should().Be(0.5m);
     }
     
     [Test]
     public async Task Given_UserHasNineDaysOverdueLoan_When_RunFeeCalculationAsyncIsCalled_Then_FeeIsAdded() {
         _overdueLoan.DueAt = DateTime.Now.AddDays(-9);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees[0].Amount.Should().Be(0.5m);
     }
     
     [Test]
     public async Task Given_LoanIsOverdueMoreThan10Days_When_RunFeeCalculationAsyncIsCalled_Then_DailyFeeIs1Euro() {
         _overdueLoan.DueAt = DateTime.Now.AddDays(-11);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees[0].Amount.Should().Be(1.0m);
     }
     
@@ -79,7 +89,9 @@ public class FeeCalculationServiceTests {
     public async Task Given_LoanFeeAmountIsNearCap_When_RunFeeCalculationAsyncIsCalled_Then_FeeIsCappedAt15Euro() {
         Fee existingFee = new() { Amount = 14.75m };
         _overdueLoan.Fees.Add(existingFee);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _overdueLoan.Fees[1].Amount.Should().Be(0.25m);
     }
     
@@ -87,22 +99,27 @@ public class FeeCalculationServiceTests {
     public async Task Given_LoanFeeAmountIsAtCap_When_RunFeeCalculationAsyncIsCalled_Then_NoFeeIsAdded() {
         Fee existingFee = new() { Amount = 15m };
         _overdueLoan.Fees.Add(existingFee);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Count.Should().Be(0);
     }
     
     [Test]
     public async Task Given_TimesRemindedIs0_When_RunFeeCalculationAsyncIsCalled_Then_NoReminderFeeIsAdded() {
         _overdueLoan.TimesReminded = 0;
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Should().NotContain(fee => fee.Type == FeeType.FirstReminder || fee.Type == FeeType.SecondReminder);
     }
 
     [Test]
     public async Task Given_TimesRemindedIs1_When_RunFeeCalculationAsyncIsCalled_Then_FirstReminderFeeIsAdded() {
-        
         _overdueLoan.TimesReminded = 1;
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Should().ContainSingle(fee => fee.Type == FeeType.FirstReminder && fee.Amount == 1m);
     }
 
@@ -112,14 +129,18 @@ public class FeeCalculationServiceTests {
         Fee existingFirstReminder = Fee.CreateFirstReminderFee(_overdueLoan.Id);
         _overdueLoan.Fees.Add(existingFirstReminder);
         _userWithOverdueLoan.Fees.Add(existingFirstReminder);
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Count(fee => fee.Type == FeeType.FirstReminder).Should().Be(1);
     }
 
     [Test]
     public async Task Given_TimesRemindedIs2_When_RunFeeCalculationAsyncIsCalled_Then_SecondReminderFeeIsAdded() {
         _overdueLoan.TimesReminded = 2;
+        
         await _classUnderTest.RunFeeCalculationAsync();
+        
         _userWithOverdueLoan.Fees.Should().ContainSingle(fee => fee.Type == FeeType.SecondReminder && fee.Amount == 3m);
     }
 
@@ -137,6 +158,66 @@ public class FeeCalculationServiceTests {
     
     #endregion
 
+    
+    #region CheckAnnualFees
+
+    [Test]
+    public async Task Given_AccessionDateIsLessThanOneYearAgo_When_RunFeeCalculationAsyncIsCalled_Then_NoAnnualFeeIsAdded() {
+        _userWithOverdueLoan.Loans.Clear();
+        _userWithOverdueLoan.AccessionDate = DateTime.Now.AddMonths(-6);
+
+        await _classUnderTest.RunFeeCalculationAsync();
+
+        _userWithOverdueLoan.Fees.Should().NotContain(fee => fee.Type == FeeType.Annual);
+    }
+
+    [Test]
+    public async Task Given_AccessionDateIsMoreThanOneYearAgoAndNoAnnualFeeExists_When_RunFeeCalculationAsyncIsCalled_Then_AnnualFeeIsAdded() {
+        _userWithOverdueLoan.Loans.Clear();
+        _userWithOverdueLoan.AccessionDate = DateTime.Now.AddYears(-2);
+
+        await _classUnderTest.RunFeeCalculationAsync();
+
+        _userWithOverdueLoan.Fees.Should().ContainSingle(fee => fee.Type == FeeType.Annual);
+    }
+
+    [Test]
+    public async Task Given_AnnualFeeAlreadyAddedForCurrentYear_When_RunFeeCalculationAsyncIsCalled_Then_NoDuplicateAnnualFeeIsAdded() {
+        _userWithOverdueLoan.Loans.Clear();
+        _userWithOverdueLoan.AccessionDate = DateTime.Now.AddYears(-2);
+        Fee existingAnnualFee = Fee.CreateAnnualFee(DateTime.Now.Year);
+        _userWithOverdueLoan.Fees.Add(existingAnnualFee);
+
+        await _classUnderTest.RunFeeCalculationAsync();
+
+        _userWithOverdueLoan.Fees.Count(fee => fee.Type == FeeType.Annual).Should().Be(1);
+    }
+
+    [Test]
+    public async Task Given_LastAnnualFeeWasMoreThanOneYearAgo_When_RunFeeCalculationAsyncIsCalled_Then_NewAnnualFeeIsAdded() {
+        _userWithOverdueLoan.Loans.Clear();
+        Fee oldAnnualFee = Fee.CreateAnnualFee(DateTime.Now.Year - 2);
+        oldAnnualFee.CreatedAt = DateTime.Now.AddYears(-2);
+        _userWithOverdueLoan.Fees.Add(oldAnnualFee);
+
+        await _classUnderTest.RunFeeCalculationAsync();
+
+        _userWithOverdueLoan.Fees.Count(fee => fee.Type == FeeType.Annual).Should().Be(2);
+    }
+
+    [Test]
+    public async Task Given_LastAnnualFeeWasLessThanOneYearAgo_When_RunFeeCalculationAsyncIsCalled_Then_NoNewAnnualFeeIsAdded() {
+        _userWithOverdueLoan.Loans.Clear();
+        Fee recentAnnualFee = Fee.CreateAnnualFee(DateTime.Now.Year);
+        recentAnnualFee.CreatedAt = DateTime.Now.AddMonths(-6);
+        _userWithOverdueLoan.Fees.Add(recentAnnualFee);
+
+        await _classUnderTest.RunFeeCalculationAsync();
+
+        _userWithOverdueLoan.Fees.Count(fee => fee.Type == FeeType.Annual).Should().Be(1);
+    }
+
+    #endregion
     
     
     [TearDown]
