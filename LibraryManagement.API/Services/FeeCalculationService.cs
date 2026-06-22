@@ -7,11 +7,11 @@ public class FeeCalculationService : BackgroundService {
     private TimeSpan ExecutionInterval { get; } = TimeSpan.FromDays(1);
 
     private readonly IUserRepository _userRepository;
-    private readonly FeeManager _feeManager;
+    private readonly FeeUpdateService _feeUpdateService;
 
-    public FeeCalculationService(ILogger<FeeCalculationService> logger, IUserRepository userRepository, ILoanRepository loanRepository, FeeManager feeManager) {
+    public FeeCalculationService(ILogger<FeeCalculationService> logger, IUserRepository userRepository, ILoanRepository loanRepository, FeeUpdateService feeUpdateService) {
         _userRepository = userRepository;
-        _feeManager = feeManager;
+        _feeUpdateService = feeUpdateService;
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -45,7 +45,7 @@ public class FeeCalculationService : BackgroundService {
                 int daysOverdue = (DateTime.Now - loan.DueAt).Days;
                 decimal amount = daysOverdue <= 10 ? 0.5m : 1.0m;
                 Fee overdueFee = Fee.CreateOverdueFee(amount, loan.Id);
-                _feeManager.TryAddFee(overdueFee, user, loan);
+                _feeUpdateService.TryAddFee(overdueFee, user, loan);
             }
         }
     }

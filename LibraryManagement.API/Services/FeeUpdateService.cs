@@ -2,11 +2,11 @@ using LibraryManagement.API.Models.Domain;
 
 namespace LibraryManagement.API.Services;
 
-/// <summary> Handles adding fees to users and loans. </summary>
-public class FeeManager {
-    private readonly ILogger<FeeManager> _logger;
+/// <summary> Holds the functionality to add fees to users and loans. </summary>
+public class FeeUpdateService {
+    private readonly ILogger<FeeUpdateService> _logger;
 
-    public FeeManager(ILogger<FeeManager> logger) {
+    public FeeUpdateService(ILogger<FeeUpdateService> logger) {
         _logger = logger;
     }
 

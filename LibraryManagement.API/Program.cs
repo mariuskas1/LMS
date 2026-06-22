@@ -1,5 +1,6 @@
 using LibraryManagement.API.Clients;
 using LibraryManagement.API.Data;
+using LibraryManagement.API.Mail;
 using LibraryManagement.API.Mappings;
 using LibraryManagement.API.Repositories;
 using LibraryManagement.API.Services;
@@ -27,6 +28,8 @@ builder.Services.AddAutoMapper( cfg => { },
 
 builder.Services.AddHostedService<FeeCalculationService>();
 builder.Services.AddHostedService<NotificationService>();
+
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
 
 WebApplication app = builder.Build();
 

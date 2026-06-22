@@ -1,4 +1,6 @@
 using AwesomeAssertions;
+using LibraryManagement.API;
+using LibraryManagement.API.Mail;
 using LibraryManagement.API.Models.Domain;
 using LibraryManagement.API.Repositories;
 using LibraryManagement.API.Services;
@@ -9,9 +11,11 @@ namespace LibraryManagement.Tests;
 
 public class NotificationServiceTests {
     private readonly Mock<IUserRepository> _userRepoMock = new();
-    private readonly Mock<ILogger<FeeManager>> _feeManagerLoggerMock = new();
+    private readonly Mock<ILogger<FeeUpdateService>> _feeManagerLoggerMock = new();
+    private readonly Mock<ILogger<NotificationService>> _notificationServiceLoggerMock = new();
+    private readonly Mock<SmtpSettings> _smtpSettingsMock = new();
     
-    private FeeManager _feeManager;
+    private FeeUpdateService _feeUpdateService;
     private NotificationService _classUnderTest;
     private User _testUser;
     
@@ -25,9 +29,9 @@ public class NotificationServiceTests {
             AccessionDate = DateTime.Now,
         };
         
-        _feeManager = new FeeManager(_feeManagerLoggerMock.Object);
+        _feeUpdateService = new FeeUpdateService(_feeManagerLoggerMock.Object);
         _userRepoMock.Setup(repo => repo.GetAllAsync()).ReturnsAsync([_testUser]);
-        _classUnderTest = new NotificationService(_userRepoMock.Object, _feeManager);
+        _classUnderTest = new NotificationService(_userRepoMock.Object, _feeUpdateService, _notificationServiceLoggerMock.Object, _smtpSettingsMock.Object);
     }
     
     #region CheckAnnualFees

@@ -1,5 +1,9 @@
+using LibraryManagement.API.Mail;
 using LibraryManagement.API.Models.Domain;
 using LibraryManagement.API.Repositories;
+using MailKit.Security;
+using Microsoft.Extensions.Options;
+using MimeKit;
 
 namespace LibraryManagement.API.Services;
 
@@ -7,11 +11,15 @@ public class NotificationService : BackgroundService{
     private TimeSpan ExecutionInterval { get; } = TimeSpan.FromDays(1);
 
     private readonly IUserRepository _userRepository;
-    private readonly FeeManager _feeManager;
+    private readonly FeeUpdateService _feeUpdateService;
+    private readonly ILogger<NotificationService> _logger;
+    private readonly SmtpSettings _smtpSettings;
 
-    public NotificationService(IUserRepository userRepository, FeeManager feeManager) {
+    public NotificationService(IUserRepository userRepository, FeeUpdateService feeUpdateService, ILogger<NotificationService> logger, SmtpSettings smtpSettings) {
         _userRepository = userRepository;
-        _feeManager = feeManager;
+        _feeUpdateService = feeUpdateService;
+        _logger = logger;
+        _smtpSettings = smtpSettings;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -23,10 +31,8 @@ public class NotificationService : BackgroundService{
     
     internal async Task RunNotificationCheckAsync() {
         List<User> allUsers = await _userRepository.GetAllAsync();
-        
         CheckAnnualFees(allUsers);
         CheckOverdueLoans(allUsers);
-        
         await _userRepository.UpdateRangeAsync(allUsers);
     }
     
@@ -36,7 +42,7 @@ public class NotificationService : BackgroundService{
             if (!AnnualFeeDue(user)) continue;
             
             SendAnnualFeeNotification(user);
-            _feeManager.AddAnnualFee(user);
+            _feeUpdateService.AddAnnualFee(user);
         }
     }
 
@@ -54,14 +60,14 @@ public class NotificationService : BackgroundService{
                 if (isLoanOverDueTenDays && !HasSecondReminderFee(loan)) {
                     SendSecondReminderNotification(user);
                     loan.TimesReminded++;
-                    _feeManager.AddSecondReminderFee(user, loan);
+                    _feeUpdateService.AddSecondReminderFee(user, loan);
                     continue;
                 }
                 
                 if (isLoanOverdueFiveDays && !HasFirstReminderFee(loan)) {
                     SendFirstReminderNotification(user);
                     loan.TimesReminded++;
-                    _feeManager.AddFirstReminderFee(user, loan);
+                    _feeUpdateService.AddFirstReminderFee(user, loan);
                 } 
             }
         }
@@ -71,7 +77,7 @@ public class NotificationService : BackgroundService{
         
     }
     
-    void SendSecondReminderNotification(User user) {
+    private void SendSecondReminderNotification(User user) {
         
     }
 
@@ -80,9 +86,31 @@ public class NotificationService : BackgroundService{
     private void SendAnnualFeeNotification(User user) {
         
     }
+
+    private async Task<bool> TrySendMailAsync(string toAddress, string subject, string body) {
+        try {
+            using MimeMessage message = new();
+            message.From.Add(MailboxAddress.Parse(_smtpSettings.FromAddress));
+            message.To.Add(MailboxAddress.Parse(toAddress));
+            message.Subject = subject;
+            message.Body = new TextPart("plain") { Text = body };
+
+            using MailKit.Net.Smtp.SmtpClient client = new();
+            await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port);
+            await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation("Successfully sent mail with subject {subject} to {ToAddress}", subject, toAddress);
+            return true;
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Failed to send mail with subject {subject} to {ToAddress}.", subject, toAddress);
+            return false;
+        }
+    }
     
     /// <summary>
-    /// Checks if an annual fee for the user is due.
+    /// Checks if an annual fee is due for the given user.
     /// This is true if one year has elapsed since the last annual fee or since the accession date of the user.
     /// </summary>
     private bool AnnualFeeDue(User user) {
