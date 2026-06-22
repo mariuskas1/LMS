@@ -31,22 +31,22 @@ public class NotificationService : BackgroundService{
     
     internal async Task RunNotificationCheckAsync() {
         List<User> allUsers = await _userRepository.GetAllAsync();
-        CheckAnnualFees(allUsers);
-        CheckOverdueLoans(allUsers);
+        await CheckAnnualFees(allUsers);
+        await CheckOverdueLoans(allUsers);
         await _userRepository.UpdateRangeAsync(allUsers);
     }
     
     /// <summary> Checks if a user's annual fee is overdue and if so, adds a new annual fee to the user's account. </summary>
-    private void CheckAnnualFees(List<User> users) {
+    private async Task CheckAnnualFees(List<User> users) {
         foreach (User user in users) {
             if (!AnnualFeeDue(user)) continue;
             
-            SendAnnualFeeNotification(user);
+            await SendAnnualFeeNotification(user);
             _feeUpdateService.AddAnnualFee(user);
         }
     }
 
-    private void CheckOverdueLoans(List<User> users) {
+    private async Task CheckOverdueLoans(List<User> users) {
         foreach (User user in users) {
             if (user.Loans.Count == 0) continue;
 
@@ -57,42 +57,55 @@ public class NotificationService : BackgroundService{
                 bool isLoanOverdueFiveDays = (DateTime.Now - loan.DueAt)>= TimeSpan.FromDays(5);
                 bool isLoanOverDueTenDays = (DateTime.Now - loan.DueAt) >= TimeSpan.FromDays(10);
 
-                if (isLoanOverDueTenDays && !HasSecondReminderFee(loan)) {
-                    SendSecondReminderNotification(user);
-                    loan.TimesReminded++;
-                    _feeUpdateService.AddSecondReminderFee(user, loan);
-                    continue;
+                if (isLoanOverDueTenDays && !HasReminderFee(loan, FeeType.SecondReminder)) {
+                    await HandleSecondReminderDue(user, loan);
+                } else if (isLoanOverdueFiveDays && !HasReminderFee(loan, FeeType.FirstReminder)) {
+                    await HandleFirstReminderDue(user, loan);
                 }
-                
-                if (isLoanOverdueFiveDays && !HasFirstReminderFee(loan)) {
-                    SendFirstReminderNotification(user);
-                    loan.TimesReminded++;
-                    _feeUpdateService.AddFirstReminderFee(user, loan);
-                } 
             }
         }
     }
 
-    private void SendFirstReminderNotification(User user) {
+    private async Task HandleFirstReminderDue(User user, Loan loan) {
+        bool reminderMailSentSuccessfully = await SendFirstReminderNotification(user, loan);
         
+        if (reminderMailSentSuccessfully) {
+            loan.TimesReminded++;
+            _feeUpdateService.AddFirstReminderFee(user, loan);
+        } else {
+            // TODO: Save to MailTracker  
+        }
     }
     
-    private void SendSecondReminderNotification(User user) {
+    private async Task HandleSecondReminderDue(User user, Loan loan) {
+        bool reminderMailSentSuccessfully = await SendSecondReminderNotification(user, loan);
         
+        if (reminderMailSentSuccessfully) {
+            loan.TimesReminded++;
+            _feeUpdateService.AddSecondReminderFee(user, loan);
+        } else {
+            // TODO: Save to MailTracker  
+        }
     }
 
-
-
-    private void SendAnnualFeeNotification(User user) {
+    private async Task<bool> SendFirstReminderNotification(User user, Loan loan) 
+        => await TrySendMailAsync(MailTemplates.FirstReminder, new MailData(user, loan.Book.Title));
+    
+    private async Task<bool> SendSecondReminderNotification(User user, Loan loan) 
+        => await TrySendMailAsync(MailTemplates.SecondReminder, new MailData(user, loan.Book.Title));
+    
+    private async Task<bool> SendAnnualFeeNotification(User user) 
+        => await TrySendMailAsync(MailTemplates.AnnualFee, new MailData(user));
+    
+    private async Task<bool> TrySendMailAsync(MailTemplate template, MailData data) {
+        string toAddress = data.User.Email;
+        string body = template.Body(data);
         
-    }
-
-    private async Task<bool> TrySendMailAsync(string toAddress, string subject, string body) {
         try {
             using MimeMessage message = new();
             message.From.Add(MailboxAddress.Parse(_smtpSettings.FromAddress));
             message.To.Add(MailboxAddress.Parse(toAddress));
-            message.Subject = subject;
+            message.Subject = template.Subject;
             message.Body = new TextPart("plain") { Text = body };
 
             using MailKit.Net.Smtp.SmtpClient client = new();
@@ -101,10 +114,10 @@ public class NotificationService : BackgroundService{
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation("Successfully sent mail with subject {subject} to {ToAddress}", subject, toAddress);
+            _logger.LogInformation("Successfully sent mail with subject {template.Subject} to {ToAddress}", template.Subject, toAddress);
             return true;
         } catch (Exception ex) {
-            _logger.LogError(ex, "Failed to send mail with subject {subject} to {ToAddress}.", subject, toAddress);
+            _logger.LogError(ex, "Failed to send mail with subject {template.Subject} to {ToAddress}.", template.Subject, toAddress);
             return false;
         }
     }
@@ -113,15 +126,13 @@ public class NotificationService : BackgroundService{
     /// Checks if an annual fee is due for the given user.
     /// This is true if one year has elapsed since the last annual fee or since the accession date of the user.
     /// </summary>
-    private bool AnnualFeeDue(User user) {
+    private static bool AnnualFeeDue(User user) {
         Fee? lastAnnualFee = user.Fees
             .Where(fee => fee.Type == FeeType.Annual)
             .MaxBy(fee => fee.CreatedAt);
         
         DateTime referenceDate = lastAnnualFee?.CreatedAt ?? user.AccessionDate;
-
         bool hasOneYearElapsedSinceReferenceDate = DateTime.Now >= referenceDate.AddYears(1);
-
         return hasOneYearElapsedSinceReferenceDate && !AnnualFeeAlreadyAdded(user);
     }
     
@@ -129,13 +140,8 @@ public class NotificationService : BackgroundService{
     private static bool AnnualFeeAlreadyAdded(User user) 
         => user.Fees.Any(fee => fee.Type == FeeType.Annual && fee.CreatedAt.Year == DateTime.Now.Year);
     
-    /// <summary> Checks if a first reminder fee has already been added to a loan. </summary>
-    private static bool HasFirstReminderFee(Loan loan) {
-        return loan.Fees.Any(fee => fee.Type == FeeType.FirstReminder);
-    }
-
-    /// <summary> Checks if a second reminder fee has already been added to a loan. </summary>
-    private static bool HasSecondReminderFee(Loan loan) {
-        return loan.Fees.Any(fee => fee.Type == FeeType.SecondReminder);
-    }
+    /// <summary> Checks if a reminder fee for the given type has already been added to a loan. </summary>
+    private static bool HasReminderFee(Loan loan, FeeType type) 
+        => loan.Fees.Any(fee => fee.Type == type);
+    
 }

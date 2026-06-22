@@ -19,11 +19,13 @@ public class FeeCalculationServiceTests {
     
     private User _userWithOverdueLoan;
     private Loan _overdueLoan;
+    private readonly Book _testBook = new() { Title = "Test" };
     
     
     [SetUp]
     public void Setup() {
         _overdueLoan = new Loan {
+            Book = _testBook,
             User = _userWithOverdueLoan,
             DueAt = DateTime.Now.AddDays(-2)
         };

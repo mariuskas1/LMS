@@ -1,24 +1,25 @@
+using LibraryManagement.API.Models.Domain;
+
 namespace LibraryManagement.API.Mail;
 
 public static class MailTemplates {
     
-    public static class AnnualFee {
-        public const string Subject = "Jahresgebühr fällig";
-        public static string Body(string firstName) =>
-            $"Hallo {firstName}, die jährliche Bibliotheksgebühr wurde fällig.";
-    }
+    public static readonly MailTemplate AnnualFee = new(
+        "Jahresgebühr fällig",
+        data => $"Hallo {data.User.FirstName}, die jährliche Bibliotheksgebühr wurde fällig."
+    );
 
-    public static class FirstReminder {
-        public const string Subject = "1. Mahnung: Überfälliges Buch";
-        public static string Body(string firstName) =>
-            $"Hallo {firstName}, Ihr Buch ist seit 5 Tagen überfällig. Bitte geben Sie es baldmöglichst zurück.";
-    }
+    public static readonly MailTemplate FirstReminder = new(
+        "1. Mahnung",
+        data => $"Hallo {data.User.FirstName}, folgende Medien sind seit 5 Tagen überfällig: {data.BookTitle}."
+    );
 
-    public static class SecondReminder {
-        public const string Subject = "2. Mahnung: Überfälliges Buch";
-        public static string Body(string firstName) =>
-            $"Hallo {firstName}, Ihr Buch ist seit 10 Tagen überfällig. Eine Mahngebühr wurde Ihrem Konto hinzugefügt.";
-    }
+    public static readonly MailTemplate SecondReminder = new(
+        "2. Mahnung",
+        data => $"Hallo {data.User.FirstName}, folgende Medien sind seit 10 Tagen überfällig: {data.BookTitle}."
+    );
 }
 
-public record MailTemplate(string Subject, Func<string, string> Body);
+public record MailTemplate(string Subject, Func<MailData, string> Body);
+
+public record MailData(User User,  string? BookTitle = null);
