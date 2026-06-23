@@ -2,6 +2,7 @@
 using LibraryManagement.API.Models.Domain;
 using LibraryManagement.API.Repositories;
 using LibraryManagement.API.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -9,9 +10,10 @@ namespace LibraryManagement.Tests;
 
 public class FeeCalculationServiceTests {
     private readonly Mock<IUserRepository> _userRepoMock = new();
-    private readonly Mock<ILoanRepository> _loanRepoMock = new();
-    private readonly Mock<ILogger<FeeCalculationService>> _feeCalculationServiceLoggerMock = new();
-    
+    private readonly Mock<IServiceScopeFactory> _scopeFactoryMock = new();
+    private readonly Mock<IServiceScope> _scopeMock = new();
+    private readonly Mock<IServiceProvider> _serviceProviderMock = new();
+
     private readonly Mock<ILogger<FeeUpdateService>> _feeManagerLoggerMock = new();
     private FeeUpdateService _feeUpdateService;
     
@@ -40,7 +42,14 @@ public class FeeCalculationServiceTests {
         
         _feeUpdateService = new FeeUpdateService(_feeManagerLoggerMock.Object);
         _userRepoMock.Setup(repo => repo.GetAllAsync()).ReturnsAsync([_userWithOverdueLoan]);
-        _classUnderTest = new FeeCalculationService(_feeCalculationServiceLoggerMock.Object, _userRepoMock.Object, _loanRepoMock.Object, _feeUpdateService);
+        
+        _serviceProviderMock
+            .Setup(sp => sp.GetService(typeof(IUserRepository)))
+            .Returns(_userRepoMock.Object);
+        _scopeMock.Setup(s => s.ServiceProvider).Returns(_serviceProviderMock.Object);
+        _scopeFactoryMock.Setup(f => f.CreateScope()).Returns(_scopeMock.Object);
+        
+        _classUnderTest = new FeeCalculationService(_feeUpdateService, _scopeFactoryMock.Object);
     }
 
     

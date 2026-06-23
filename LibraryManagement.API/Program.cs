@@ -26,6 +26,7 @@ builder.Services.AddScoped<OpenLibraryClient>();
 builder.Services.AddAutoMapper( cfg => { },
     typeof(AutomapperProfiles).Assembly);
 
+builder.Services.AddSingleton<FeeUpdateService>();
 builder.Services.AddHostedService<FeeCalculationService>();
 builder.Services.AddHostedService<NotificationService>();
 

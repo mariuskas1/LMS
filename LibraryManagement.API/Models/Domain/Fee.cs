@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace LibraryManagement.API.Models.Domain;
 
 public class Fee {
+    public int Id { get; set; }
     public FeeType Type { get; set; } = FeeType.Standard;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     

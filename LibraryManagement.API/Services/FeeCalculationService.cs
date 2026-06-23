@@ -6,12 +6,13 @@ namespace LibraryManagement.API.Services;
 public class FeeCalculationService : BackgroundService {
     private TimeSpan ExecutionInterval { get; } = TimeSpan.FromDays(1);
 
-    private readonly IUserRepository _userRepository;
     private readonly FeeUpdateService _feeUpdateService;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public FeeCalculationService(ILogger<FeeCalculationService> logger, IUserRepository userRepository, ILoanRepository loanRepository, FeeUpdateService feeUpdateService) {
-        _userRepository = userRepository;
+
+    public FeeCalculationService(FeeUpdateService feeUpdateService, IServiceScopeFactory scopeFactory) {
         _feeUpdateService = feeUpdateService;
+        _scopeFactory = scopeFactory;
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -23,11 +24,12 @@ public class FeeCalculationService : BackgroundService {
     }
 
     internal async Task RunFeeCalculationAsync() {
-        List<User> allUsers = await _userRepository.GetAllAsync();
+        using IServiceScope scope = _scopeFactory.CreateScope();
+        IUserRepository userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         
+        List<User> allUsers = await userRepository.GetAllAsync();
         CheckOverdueLoans(allUsers);
-
-        await _userRepository.UpdateRangeAsync(allUsers);
+        await userRepository.UpdateRangeAsync(allUsers);
     }
 
     /// <summary>

@@ -10,16 +10,16 @@ namespace LibraryManagement.API.Services;
 public class NotificationService : BackgroundService{
     private TimeSpan ExecutionInterval { get; } = TimeSpan.FromDays(1);
 
-    private readonly IUserRepository _userRepository;
     private readonly FeeUpdateService _feeUpdateService;
     private readonly ILogger<NotificationService> _logger;
     private readonly SmtpSettings _smtpSettings;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public NotificationService(IUserRepository userRepository, FeeUpdateService feeUpdateService, ILogger<NotificationService> logger, SmtpSettings smtpSettings) {
-        _userRepository = userRepository;
+    public NotificationService(FeeUpdateService feeUpdateService, ILogger<NotificationService> logger, IOptions<SmtpSettings> smtpSettings, IServiceScopeFactory scopeFactory) {
         _feeUpdateService = feeUpdateService;
         _logger = logger;
-        _smtpSettings = smtpSettings;
+        _smtpSettings = smtpSettings.Value;
+        _scopeFactory = scopeFactory;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -30,10 +30,13 @@ public class NotificationService : BackgroundService{
     }
     
     internal async Task RunNotificationCheckAsync() {
-        List<User> allUsers = await _userRepository.GetAllAsync();
+        using IServiceScope scope = _scopeFactory.CreateScope();
+        IUserRepository userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+        
+        List<User> allUsers = await userRepository.GetAllAsync();
         await CheckAnnualFees(allUsers);
         await CheckOverdueLoans(allUsers);
-        await _userRepository.UpdateRangeAsync(allUsers);
+        await userRepository.UpdateRangeAsync(allUsers);
     }
     
     /// <summary> Checks if a user's annual fee is overdue and if so, adds a new annual fee to the user's account. </summary>

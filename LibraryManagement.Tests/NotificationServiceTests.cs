@@ -4,7 +4,9 @@ using LibraryManagement.API.Mail;
 using LibraryManagement.API.Models.Domain;
 using LibraryManagement.API.Repositories;
 using LibraryManagement.API.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace LibraryManagement.Tests;
@@ -13,7 +15,10 @@ public class NotificationServiceTests {
     private readonly Mock<IUserRepository> _userRepoMock = new();
     private readonly Mock<ILogger<FeeUpdateService>> _feeManagerLoggerMock = new();
     private readonly Mock<ILogger<NotificationService>> _notificationServiceLoggerMock = new();
-    private readonly Mock<SmtpSettings> _smtpSettingsMock = new();
+    private readonly Mock<IOptions<SmtpSettings>> _smtpSettingsMock = new();
+    private readonly Mock<IServiceScopeFactory> _scopeFactoryMock = new();
+    private readonly Mock<IServiceScope> _scopeMock = new();
+    private readonly Mock<IServiceProvider> _serviceProviderMock = new();
     
     private FeeUpdateService _feeUpdateService;
     private NotificationService _classUnderTest;
@@ -31,7 +36,14 @@ public class NotificationServiceTests {
         
         _feeUpdateService = new FeeUpdateService(_feeManagerLoggerMock.Object);
         _userRepoMock.Setup(repo => repo.GetAllAsync()).ReturnsAsync([_testUser]);
-        _classUnderTest = new NotificationService(_userRepoMock.Object, _feeUpdateService, _notificationServiceLoggerMock.Object, _smtpSettingsMock.Object);
+        
+        _serviceProviderMock
+            .Setup(sp => sp.GetService(typeof(IUserRepository)))
+            .Returns(_userRepoMock.Object);
+        _scopeMock.Setup(s => s.ServiceProvider).Returns(_serviceProviderMock.Object);
+        _scopeFactoryMock.Setup(f => f.CreateScope()).Returns(_scopeMock.Object);
+        
+        _classUnderTest = new NotificationService(_feeUpdateService, _notificationServiceLoggerMock.Object, _smtpSettingsMock.Object, _scopeFactoryMock.Object);
     }
     
     #region CheckAnnualFees
