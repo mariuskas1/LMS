@@ -58,36 +58,29 @@ public class NotificationService : BackgroundService{
                 bool isLoanOverDueTenDays = (DateTime.Now - loan.DueAt) >= TimeSpan.FromDays(10);
 
                 if (isLoanOverDueTenDays && !HasReminderFee(loan, FeeType.SecondReminder)) {
-                    await HandleSecondReminderDue(user, loan);
+                    await HandleReminderDue(user, loan, FeeType.SecondReminder);
                 } else if (isLoanOverdueFiveDays && !HasReminderFee(loan, FeeType.FirstReminder)) {
-                    await HandleFirstReminderDue(user, loan);
+                    await HandleReminderDue(user, loan, FeeType.FirstReminder);
                 }
             }
         }
     }
+    
+    private async Task HandleReminderDue(User user, Loan loan, FeeType feeType) {
+        bool isFirstReminder = feeType == FeeType.FirstReminder;
+        Func<User, Loan, Task<bool>> sendReminder = isFirstReminder ? SendFirstReminderNotification : SendSecondReminderNotification;
+        Action<User, Loan> addFee = isFirstReminder ? _feeUpdateService.AddFirstReminderFee : _feeUpdateService.AddSecondReminderFee;
 
-    private async Task HandleFirstReminderDue(User user, Loan loan) {
-        bool reminderMailSentSuccessfully = await SendFirstReminderNotification(user, loan);
-        
-        if (reminderMailSentSuccessfully) {
+        bool mailSentSuccessfully = await sendReminder(user, loan);
+
+        if (mailSentSuccessfully) {
             loan.TimesReminded++;
-            _feeUpdateService.AddFirstReminderFee(user, loan);
+            addFee(user, loan);
         } else {
-            // TODO: Save to MailTracker  
+            _logger.LogError("Sending reminder notification to user {UserId} failed for loan: {LoanId}", user.Id, loan.Id);
         }
     }
     
-    private async Task HandleSecondReminderDue(User user, Loan loan) {
-        bool reminderMailSentSuccessfully = await SendSecondReminderNotification(user, loan);
-        
-        if (reminderMailSentSuccessfully) {
-            loan.TimesReminded++;
-            _feeUpdateService.AddSecondReminderFee(user, loan);
-        } else {
-            // TODO: Save to MailTracker  
-        }
-    }
-
     private async Task<bool> SendFirstReminderNotification(User user, Loan loan) 
         => await TrySendMailAsync(MailTemplates.FirstReminder, new MailData(user, loan.Book.Title));
     
